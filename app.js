@@ -8,7 +8,7 @@ const app = express();
 
 app.use(bodyParser.json());
 
-const { PORT = 3000, MONGO_URL = 'mongodb://localhost:27017/mestodb' } = process.env;
+const { PORT = 9090, MONGO_URL = 'mongodb://localhost:27017/mestodb' } = process.env;
 
 async function connect() {
   try {
@@ -21,11 +21,11 @@ async function connect() {
     console.log(err);
   }
 }
-app.listen(3000);
+app.listen(9090);
 
 app.use((req, res, next) => {
   req.user = {
-    _id: '639717c5c9a79c3d523a243e',
+    _id: '639717c5c9a78c3d523a243e',
   };
   next();
 });
