@@ -64,13 +64,15 @@ module.exports.getLikes = (req, res) => {
           message: 'Переданы некорректные данные для постановки лайка.',
         });
       } else if (err.name === 'NotFound') {
-        res.status(400).send({
+        res.status(404).send({
           message: 'Передан несуществующий _id карточки.',
         });
+      } else {
+        res.status(500).send({ message: err.message });
       }
-      return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
+
 // убрать лайк
 module.exports.deleteLikes = (req, res) => {
   cardSchema
@@ -91,8 +93,8 @@ module.exports.deleteLikes = (req, res) => {
           message: 'Переданы некорректные данные для снятия лайка',
         });
       } if (err.message === 'NotFound') {
-        res.status(404).send({ message: 'Передан несуществующий _id карточки' });
+        return res.status(404).send({ message: 'Передан несуществующий _id карточки' });
       }
-      return res.status(500).send({ message: 'Ошибка по умолчанию' });
+      return res.status(500).send({ message: `Ошибка: ${err.message}` });
     });
 };
