@@ -1,76 +1,91 @@
+// controllers/cards.js
 const { constants } = require('http2');
-const userSchema = require('../models/user');
-const errors = require('./errors');
+const cardSchema = require('../models/card');
 
-// Поиск всех пользователей
-module.exports.getUsers = (req, res) => {
-  userSchema
+// Получить все карточки
+module.exports.getCards = (req, res) => {
+  cardSchema
     .find({})
-    .then((users) => res.status(constants.HTTP_STATUS_OK).send(users));
+    .then((cards) => res.status(constants.HTTP_STATUS_OK).send(cards))
+    .catch(() => res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка при получении карточек.' }));
 };
 
-// Создание пользователя
-module.exports.createUsers = (req, res) => {
-  const { name, about, avatar } = req.body;
-  userSchema
-    .create({ name, about, avatar })
-    .then((user) => res.status(constants.HTTP_STATUS_CREATED).send(user))
+// Создать карточку
+module.exports.createCard = (req, res) => {
+  const { name, link } = req.body;
+  const owner = req.user._id;
+
+  cardSchema
+    .create({ name, link, owner })
+    .then((card) => res.status(constants.HTTP_STATUS_CREATED).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Ошибка валидации данных' });
+        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки.' });
       } else {
-        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
+        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка при создании карточки.' });
       }
     });
 };
 
-// Поиск пользователя по ID
-module.exports.getUserById = (req, res) => {
-  const { userId } = req.params;
-  userSchema
-    .findById(userId)
-    .orFail(new Error(errors.ERROR_404_USER_NOT_FOUND))
-    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
+// Удалить карточку
+module.exports.deleteCard = (req, res) => {
+  const { cardId } = req.params;
+
+  cardSchema
+    .findByIdAndRemove(cardId)
+    .then((card) => {
+      if (!card) {
+        return res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена.' });
+      }
+      return res.status(constants.HTTP_STATUS_OK).send(card);
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Некорректный формат данных' });
-      } else if (err.message === errors.ERROR_404_USER_NOT_FOUND) {
-        res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь не найден' });
+        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан некорректный _id карточки.' });
       } else {
-        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
+        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка при удалении карточки.' });
       }
     });
 };
 
-// Обновление данных пользователя
-module.exports.updateUser = (req, res) => {
-  const { name, about } = req.body;
-  userSchema
-    .findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .orFail(new Error(errors.ERROR_404_USER_NOT_FOUND))
-    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
+// Поставить лайк
+module.exports.addLike = (req, res) => {
+  const { cardId } = req.params;
+
+  cardSchema
+    .findByIdAndUpdate(cardId, { $addToSet: { likes: req.user._id } }, { new: true })
+    .then((card) => {
+      if (!card) {
+        return res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена.' });
+      }
+      return res.status(constants.HTTP_STATUS_OK).send(card);
+    })
     .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
-        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Ошибка валидации данных' });
-      } else if (err.message === errors.ERROR_404_USER_NOT_FOUND) {
-        res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь не найден' });
+      if (err.name === 'CastError') {
+        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан некорректный _id карточки или пользователь не найден.' });
       } else {
-        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
+        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка при постановке лайка.' });
       }
     });
 };
 
-// Обновление аватара пользователя
-module.exports.updateAvatar = (req, res) => {
-  const { avatar } = req.body;
-  userSchema
-    .findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
+// Убрать лайк
+module.exports.removeLike = (req, res) => {
+  const { cardId } = req.params;
+
+  cardSchema
+    .findByIdAndUpdate(cardId, { $pull: { likes: req.user._id } }, { new: true })
+    .then((card) => {
+      if (!card) {
+        return res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Карточка с указанным _id не найдена.' });
+      }
+      return res.status(constants.HTTP_STATUS_OK).send(card);
+    })
     .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
-        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Ошибка валидации данных' });
+      if (err.name === 'CastError' || err.name === 'ValidationError') {
+        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Передан некорректный _id карточки или пользователь не найден.' });
       } else {
-        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
+        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка при снятии лайка.' });
       }
     });
 };

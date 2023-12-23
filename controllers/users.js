@@ -1,7 +1,6 @@
 const { constants } = require('http2');
 
 const userSchema = require('../models/user');
-const errors = require('./errors');
 
 // Поиск всех пользователей
 module.exports.getUsers = (req, res) => {
@@ -31,12 +30,12 @@ module.exports.getUserById = (req, res) => {
   const { userId } = req.params;
   userSchema
     .findById(userId)
-    .orFail(new Error(errors.ERROR_404_USER_NOT_FOUND))
+    .orFail(new Error(constants.ERROR_404_USER_NOT_FOUND))
     .then((user) => res.send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные для поиска пользователя.' });
-      } else if (err.message === errors.ERROR_404_USER_NOT_FOUND) {
+      } else if (err.message === constants.ERROR_404_USER_NOT_FOUND) {
         res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден.' });
       } else {
         res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' });
@@ -49,12 +48,12 @@ module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
   userSchema
     .findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .orFail(new Error(errors.ERROR_404_USER_NOT_FOUND))
+    .orFail(new Error(constants.ERROR_404_USER_NOT_FOUND))
     .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
         res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении пользователя.' });
-      } else if (err.message === errors.ERROR_404_USER_NOT_FOUND) {
+      } else if (err.message === constants.ERROR_404_USER_NOT_FOUND) {
         res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден.' });
       } else {
         res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' });
