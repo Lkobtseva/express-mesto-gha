@@ -5,13 +5,13 @@ const {
   createCard,
   deleteCard,
   addLike,
-  deleteLikes,
+  removeLike,
 } = require('../controllers/cards');
 
 cardRoutes.get('/', getCards);
 cardRoutes.post('/', createCard);
 cardRoutes.delete('/:cardId', deleteCard);
 cardRoutes.put('/:cardId/likes', addLike);
-cardRoutes.delete('/:cardId/likes', deleteLikes);
+cardRoutes.delete('/:cardId/likes', removeLike);
 
 module.exports = cardRoutes;
