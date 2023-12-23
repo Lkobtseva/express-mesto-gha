@@ -30,11 +30,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// подключаем роуты
 app.use(router);
 
 app.get('/', (req, res) => {
-  res.send('hkhh');
+  res.send('llll');
 });
 
 connect();

@@ -1,12 +1,13 @@
 const cardSchema = require('../models/card');
-// возвращаем все карточки
+
+// все карточки
 module.exports.getCards = (req, res) => {
   cardSchema
     .find({})
     .then((cards) => res.status(200).send(cards))
     .catch((err) => res.status(500).send({ message: err.message }));
 };
-// создаем карточку
+// создать карточку
 module.exports.createCards = (req, res) => {
   const { name, link } = req.body;
   const owner = req.user._id;
@@ -23,7 +24,7 @@ module.exports.createCards = (req, res) => {
       }
     });
 };
-// удаляем карточку
+// удалить карточку
 module.exports.deleteCard = (req, res) => {
   const { cardId } = req.params;
   cardSchema

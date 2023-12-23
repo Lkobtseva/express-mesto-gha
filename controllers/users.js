@@ -1,13 +1,13 @@
 const userSchema = require('../models/user');
 
-// ищем всех пользователей
+// поиск всех пользователей
 module.exports.getUsers = (req, res) => {
   userSchema
     .find({})
     .then((users) => res.send(users))
     .catch((err) => res.status(500).send({ message: err.message }));
 };
-// создаем пользователя
+// создание пользователя
 module.exports.createUsers = (req, res) => {
   const { name, about, avatar } = req.body;
   userSchema
@@ -25,7 +25,7 @@ module.exports.createUsers = (req, res) => {
       }
     });
 };
-// ищем по ID
+// поиск user по ID
 module.exports.getUserById = (req, res) => {
   const { userId } = req.params;
   userSchema
@@ -43,7 +43,7 @@ module.exports.getUserById = (req, res) => {
       return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
-// обновить данные
+// обновляются данные user
 module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
   userSchema
@@ -60,7 +60,7 @@ module.exports.updateUser = (req, res) => {
       return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
-// обновление аватара
+// обновить аватарку
 module.exports.updateAvatar = (req, res) => {
   const { avatar } = req.body;
   userSchema
