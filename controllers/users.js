@@ -1,13 +1,15 @@
 const userSchema = require('../models/user');
+const errors = require('./errors');
 
-// поиск всех пользователей
+// Поиск всех пользователей
 module.exports.getUsers = (req, res) => {
   userSchema
     .find({})
     .then((users) => res.send(users))
-    .catch((err) => res.status(500).send({ message: err.message }));
+    .catch(() => res.status(500).send({ message: errors.ERROR_500 }));
 };
-// создание пользователя
+
+// Создание пользователя
 module.exports.createUsers = (req, res) => {
   const { name, about, avatar } = req.body;
   userSchema
@@ -15,52 +17,50 @@ module.exports.createUsers = (req, res) => {
     .then((user) => res.status(201).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res
-          .status(400)
-          .send({
-            message: 'Переданы некорректные данные при создании пользователя.',
-          });
+        res.status(400).send({ message: errors.ERROR_400_INVALID_DATA });
       } else {
-        res.status(500).send({ message: err.message });
+        res.status(500).send({ message: errors.ERROR_500 });
       }
     });
 };
-// поиск user по ID
+
+// Поиск пользователя по ID
 module.exports.getUserById = (req, res) => {
   const { userId } = req.params;
   userSchema
     .findById(userId)
-    .orFail(new Error('NotFound'))
+    .orFail(new Error(errors.ERROR_404_USER_NOT_FOUND))
     .then((user) => res.send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
-        return res
-          .status(400)
-          .send({ message: 'Переданы некорректные данные' });
-      } if (err.message === 'NotFound') {
-        return res.status(404).send({ message: 'Пользователь по указанному _id не найден' });
+        res.status(400).send({ message: errors.ERROR_400_INVALID_DATA });
+      } else if (err.message === errors.ERROR_404_USER_NOT_FOUND) {
+        res.status(404).send({ message: errors.ERROR_404_USER_NOT_FOUND });
+      } else {
+        res.status(500).send({ message: errors.ERROR_500 });
       }
-      return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
-// обновляются данные user
+
+// Обновление данных пользователя
 module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
   userSchema
     .findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+    .orFail(new Error(errors.ERROR_404_USER_NOT_FOUND))
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
-        return res.status(400).send({
-          message: 'Переданы некорректные данные при обновлении профиля.',
-        });
-      } if (err.message === 'NotFound') {
-        return res.status(404).send({ message: 'Пользователь не найден' });
+        res.status(400).send({ message: errors.ERROR_400_INVALID_DATA });
+      } else if (err.message === errors.ERROR_404_USER_NOT_FOUND) {
+        res.status(404).send({ message: errors.ERROR_404_USER_NOT_FOUND });
+      } else {
+        res.status(500).send({ message: errors.ERROR_500 });
       }
-      return res.status(500).send({ message: 'Ошибка по умолчанию' });
     });
 };
-// обновить аватарку
+
+// Обновление аватара пользователя
 module.exports.updateAvatar = (req, res) => {
   const { avatar } = req.body;
   userSchema
@@ -68,11 +68,9 @@ module.exports.updateAvatar = (req, res) => {
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
-        res.status(400).send({
-          message: 'Переданы некорректные данные при обновлении аватара.',
-        });
+        res.status(400).send({ message: errors.ERROR_400_INVALID_DATA });
       } else {
-        res.status(500).send({ message: err.message });
+        res.status(500).send({ message: errors.ERROR_500 });
       }
     });
 };
