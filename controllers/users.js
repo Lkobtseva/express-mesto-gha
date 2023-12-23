@@ -30,8 +30,8 @@ module.exports.getUserById = (req, res) => {
   const { userId } = req.params;
   userSchema
     .findById(userId)
-    .orFail(new Error(constants.ERROR_404_USER_NOT_FOUND))
-    .then((user) => res.send(user))
+    .orFail(constants.ERROR_404_USER_NOT_FOUND)
+    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные для поиска пользователя.' });
