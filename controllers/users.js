@@ -30,12 +30,12 @@ module.exports.getUserById = (req, res) => {
   const { userId } = req.params;
   userSchema
     .findById(userId)
-    .orFail(new Error('NotFound'))
+    .orFail({ status: constants.HTTP_STATUS_NOT_FOUND, message: 'Пользователь с указанным _id не найден.' })
     .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные для поиска пользователя.' });
-      } else if (err.message === 'Пользователь с указанным _id не найден.') {
+      } else if (err.status === constants.HTTP_STATUS_NOT_FOUND) {
         res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: err.message });
       } else {
         res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' });
