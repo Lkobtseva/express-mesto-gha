@@ -1,94 +1,76 @@
-const cardSchema = require('../models/card');
+const { constants } = require('http2');
+const userSchema = require('../models/user');
 const errors = require('./errors');
 
-// Получить все карточки
-module.exports.getCards = (req, res) => {
-  cardSchema
+// Поиск всех пользователей
+module.exports.getUsers = (req, res) => {
+  userSchema
     .find({})
-    .then((cards) => res.status(200).send(cards))
-    .catch(() => res.status(500).send({ message: errors.ERROR_500 }));
+    .then((users) => res.status(constants.HTTP_STATUS_OK).send(users));
 };
 
-// Создать карточку
-module.exports.createCard = (req, res) => {
-  const { name, link } = req.body;
-  const owner = req.user._id;
-
-  cardSchema
-    .create({ name, link, owner })
-    .then((card) => res.status(201).send(card))
+// Создание пользователя
+module.exports.createUsers = (req, res) => {
+  const { name, about, avatar } = req.body;
+  userSchema
+    .create({ name, about, avatar })
+    .then((user) => res.status(constants.HTTP_STATUS_CREATED).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: errors.ERROR_400 });
+        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Ошибка валидации данных' });
       } else {
-        res.status(500).send({ message: errors.ERROR_500 });
+        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
       }
     });
 };
 
-// Удалить карточку
-module.exports.deleteCard = (req, res) => {
-  const { cardId } = req.params;
-
-  cardSchema
-    .findByIdAndRemove(cardId)
-    .then((card) => {
-      if (!card) {
-        return res.status(404).send({ message: errors.ERROR_404_CARD_NOT_FOUND });
-      }
-      return res.status(200).send(card);
-    })
+// Поиск пользователя по ID
+module.exports.getUserById = (req, res) => {
+  const { userId } = req.params;
+  userSchema
+    .findById(userId)
+    .orFail(new Error(errors.ERROR_404_USER_NOT_FOUND))
+    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: errors.ERROR_400 });
+        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Некорректный формат данных' });
+      } else if (err.message === errors.ERROR_404_USER_NOT_FOUND) {
+        res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь не найден' });
       } else {
-        res.status(500).send({ message: errors.ERROR_500 });
+        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
       }
     });
 };
 
-// Поставить лайк
-module.exports.addLike = (req, res) => {
-  const { cardId } = req.params;
-
-  cardSchema
-    .findByIdAndUpdate(cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .then((card) => {
-      if (!card) {
-        return res.status(404).send({ message: errors.ERROR_404_CARD_NOT_FOUND });
-      }
-      return res.status(200).send(card);
-    })
+// Обновление данных пользователя
+module.exports.updateUser = (req, res) => {
+  const { name, about } = req.body;
+  userSchema
+    .findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+    .orFail(new Error(errors.ERROR_404_USER_NOT_FOUND))
+    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(400).send({ message: errors.ERROR_INVALID_LIKE_DATA });
-      } else if (err.name === 'NotFound') {
-        res.status(404).send({ message: errors.ERROR_CARD_NOT_FOUND });
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Ошибка валидации данных' });
+      } else if (err.message === errors.ERROR_404_USER_NOT_FOUND) {
+        res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: 'Пользователь не найден' });
       } else {
-        res.status(500).send({ message: errors.ERROR_500 });
+        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
       }
     });
 };
 
-// Убрать лайк
-module.exports.removeLike = (req, res) => {
-  const { cardId } = req.params;
-
-  cardSchema
-    .findByIdAndUpdate(cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .then((card) => {
-      if (!card) {
-        return res.status(404).send({ message: errors.ERROR_404_CARD_NOT_FOUND });
-      }
-      return res.status(200).send(card);
-    })
+// Обновление аватара пользователя
+module.exports.updateAvatar = (req, res) => {
+  const { avatar } = req.body;
+  userSchema
+    .findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
+    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
     .catch((err) => {
-      if (err.name === 'CastError' || err.name === 'ValidationError') {
-        res.status(400).send({ message: errors.ERROR_400 });
-      } else if (err.message === 'NotFound') {
-        res.status(404).send({ message: errors.ERROR_CARD_NOT_FOUND });
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Ошибка валидации данных' });
       } else {
-        res.status(500).send({ message: errors.ERROR_500 });
+        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка' });
       }
     });
 };
