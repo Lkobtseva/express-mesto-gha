@@ -5,11 +5,12 @@ router.use(express.json());
 
 const cardsRouter = require('./cards');
 const usersRouter = require('./users');
+const NotFound = require('../errors/NotFound');
 
 router.use('/cards', cardsRouter);
 router.use('/users', usersRouter);
-router.use('*', (req, res) => {
-  res.status(404).send({ message: 'Not Found' });
+router.use((req, res, next) => {
+  next(new NotFound('Такая страница не существует'));
 });
 
 module.exports = router;

@@ -1,77 +1,79 @@
-const { constants } = require('http2');
-
+const BadRequest = require('../errors/BadRequest'); // код 400
+const NotFound = require('../errors/NotFound'); // код 404
 const userSchema = require('../models/user');
 
 // Поиск всех пользователей
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   userSchema
     .find({})
     .then((users) => res.send(users))
-    .catch(() => res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' }));
-};
-
-// Создание пользователя
-module.exports.createUsers = (req, res) => {
-  const { name, about, avatar } = req.body;
-  userSchema
-    .create({ name, about, avatar })
-    .then((user) => res.status(constants.HTTP_STATUS_CREATED).send(user))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя.' });
-      } else {
-        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' });
-      }
-    });
+    .catch(next);
 };
 
 // Поиск пользователя по ID
-module.exports.getUserById = (req, res) => {
+module.exports.getUserById = (req, res, next) => {
   const { userId } = req.params;
-  userSchema
-    .findById(userId)
-    .orFail({ status: constants.HTTP_STATUS_NOT_FOUND, message: 'Пользователь с указанным _id не найден.' })
-    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
+  userSchema.findById(userId)
+    .then((user) => {
+      if (!user) {
+        throw new NotFound('Пользователь не найден');
+      }
+      res.send({ data: user });
+    })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные для поиска пользователя.' });
-      } else if (err.status === constants.HTTP_STATUS_NOT_FOUND) {
-        res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: err.message });
-      } else {
-        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' });
+        next(new BadRequest('Передан некорретный Id'));
+        return;
       }
+      next(err);
     });
 };
 
 // Обновление данных пользователя
-module.exports.updateUser = (req, res) => {
+module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
   userSchema
     .findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .orFail(new Error('NotFound'))
-    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
+    .then((user) => {
+      if (!user) {
+        throw new NotFound('Пользователь не найден');
+      }
+      res.status(200).send(user);
+    })
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
-        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении пользователя.' });
-      } else if (err.message === 'Пользователь с указанным _id не найден.') {
-        res.status(constants.HTTP_STATUS_NOT_FOUND).send({ message: err.message });
-      } else {
-        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' });
-      }
+        next(BadRequest('Переданы некорректные данные при обновлении профиля.'));
+      } else next(err);
     });
 };
 
 // Обновление аватара пользователя
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   userSchema
     .findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then((user) => res.status(constants.HTTP_STATUS_OK).send(user))
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError' || err.name === 'CastError') {
-        res.status(constants.HTTP_STATUS_BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении аватара пользователя.' });
-      } else {
-        res.status(constants.HTTP_STATUS_INTERNAL_SERVER_ERROR).send({ message: 'Произошла ошибка на сервере.' });
+        next(new BadRequest('Переданы некорректные данные при обновлении профиля.'));
+      } else next(err);
+    });
+};
+
+// текущий пользователь
+module.exports.getCurrentUser = (req, res, next) => {
+  userSchema.findById(req.user._id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFound('Пользователь не найден');
       }
+      res.status(200).send(user);
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(BadRequest('Переданы некорректные данные'));
+      } else if (err.message === 'NotFound') {
+        next(new NotFound('Пользователь не найден'));
+      } else next(err);
     });
 };
