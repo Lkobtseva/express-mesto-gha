@@ -1,6 +1,7 @@
 const { celebrate, Joi } = require('celebrate');
 const isUrl = require('validator/lib/isURL');
-const BadRequest = require('../errors/BadRequest'); // 400
+const BadRequest = require('../errors/BadRequest'); // code 400
+
 // валидания ссылок
 const validationUrl = (url) => {
   const validate = isUrl(url);
@@ -9,12 +10,12 @@ const validationUrl = (url) => {
   }
   throw new BadRequest('Некорректный адрес URL');
 };
-// валидация ID
+// валидация по Id
 const validationID = (id) => {
   if (/^[0-9a-fA-F]{24}$/.test(id)) {
     return id;
   }
-  throw new BadRequest('Передан некорретный id.');
+  throw new BadRequest('Передан некорретный id');
 };
 
 // аутенфикация
@@ -60,7 +61,7 @@ module.exports.validationCreateCard = celebrate({
     link: Joi.string().required().custom(validationUrl),
   }),
 });
-// поиск карточки по Id
+// поиск карточки по ID
 module.exports.validationCardById = celebrate({
   params: Joi.object().keys({
     cardId: Joi.string().required().custom(validationID),

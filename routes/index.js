@@ -10,7 +10,7 @@ const NotFound = require('../errors/NotFound');
 router.use('/cards', cardsRouter);
 router.use('/users', usersRouter);
 router.use((req, res, next) => {
-  next(new NotFound('Такая страница не существует'));
+  next(new NotFound('Такой страницы не существует'));
 });
 
 module.exports = router;
